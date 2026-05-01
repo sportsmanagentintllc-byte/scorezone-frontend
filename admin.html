@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ScoreZone Admin Panel</title>
+<style>
+:root {
+  --bg:        #0d0f14;
+  --surface:   #13161e;
+  --card:      #191d27;
+  --border:    #252a38;
+  --accent:    #7c3aed;
+  --accent2:   #a855f7;
+  --live:      #ef4444;
+  --green:     #22c55e;
+  --gold:      #f59e0b;
+  --text:      #e8ecf4;
+  --muted:     #6b7280;
+  --dim:       #1f2433;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;}
+
+/* SIDEBAR */
+.sidebar{width:220px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;height:100vh;z-index:100;}
+.sidebar-logo{padding:20px 16px;border-bottom:1px solid var(--border);font-size:18px;font-weight:800;letter-spacing:-0.5px;}
+.sidebar-logo span{color:var(--accent2);}
+.sidebar-nav{padding:12px 8px;flex:1;overflow-y:auto;}
+.nav-group-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);padding:8px 8px 4px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;font-size:14px;color:var(--muted);transition:all .2s;margin-bottom:2px;}
+.nav-item:hover{background:var(--dim);color:var(--text);}
+.nav-item.active{background:rgba(124,58,237,.15);color:var(--accent2);font-weight:600;}
+.nav-item .icon{font-size:16px;width:20px;text-align:center;}
+.sidebar-footer{padding:14px 12px;border-top:1px solid var(--border);font-size:12px;color:var(--muted);}
+
+/* MAIN */
+.main{margin-left:220px;flex:1;display:flex;flex-direction:column;min-height:100vh;}
+
+/* TOP BAR */
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50;}
+.topbar h1{font-size:16px;font-weight:700;flex:1;}
+.api-url-input{background:var(--dim);border:1px solid var(--border);color:var(--text);font-size:12px;padding:6px 12px;border-radius:6px;width:260px;font-family:monospace;}
+.api-key-input{background:var(--dim);border:1px solid var(--border);color:var(--text);font-size:12px;padding:6px 12px;border-radius:6px;width:200px;font-family:monospace;}
+
+/* CONTENT AREA */
+.content{padding:24px;flex:1;}
+.page{display:none;}
+.page.active{display:block;}
+
+/* STAT CARDS */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:24px;}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;}
+.stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;}
+.stat-val{font-size:28px;font-weight:800;line-height:1;}
+.stat-val.green{color:var(--green);}
+.stat-val.purple{color:var(--accent2);}
+.stat-val.gold{color:var(--gold);}
+.stat-val.red{color:var(--live);}
+
+/* SECTION HEADERS */
+.section-header{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+.section-header h2{font-size:17px;font-weight:700;}
+.section-header .btn-primary{margin-left:auto;}
+
+/* BUTTONS */
+.btn{border:none;padding:8px 16px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:6px;font-family:inherit;}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{background:var(--accent2);}
+.btn-sm{padding:5px 11px;font-size:12px;}
+.btn-danger{background:rgba(239,68,68,.12);color:var(--live);border:1px solid rgba(239,68,68,.25);}
+.btn-danger:hover{background:rgba(239,68,68,.25);}
+.btn-ghost{background:var(--dim);color:var(--muted);border:1px solid var(--border);}
+.btn-ghost:hover{color:var(--text);border-color:var(--accent);}
+.btn-green{background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.25);}
+.btn-green:hover{background:rgba(34,197,94,.25);}
+
+/* TABLES */
+.table-wrap{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{background:var(--surface);padding:10px 14px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);border-bottom:1px solid var(--border);}
+td{padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.03);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(255,255,255,.02);}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:.5px;}
+.badge-live{background:rgba(239,68,68,.15);color:var(--live);border:1px solid rgba(239,68,68,.3);}
+.badge-green{background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.25);}
+.badge-gold{background:rgba(245,158,11,.12);color:var(--gold);border:1px solid rgba(245,158,11,.25);}
+.badge-gray{background:var(--dim);color:var(--muted);border:1px solid var(--border);}
+.badge-purple{background:rgba(124,58,237,.12);color:var(--accent2);border:1px solid rgba(124,58,237,.25);}
+
+/* FORMS */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.form-grid.full{grid-template-columns:1fr;}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-group.span2{grid-column:span 2;}
+label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;}
+input,select,textarea{background:var(--dim);border:1px solid var(--border);color:var(--text);font-size:13px;padding:8px 12px;border-radius:7px;font-family:inherit;transition:border .2s;width:100%;}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);}
+textarea{resize:vertical;min-height:100px;}
+.form-hint{font-size:11px;color:var(--muted);margin-top:2px;}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .25s;backdrop-filter:blur(4px);}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:14px;width:100%;overflow:hidden;transform:scale(.95);transition:transform .25s;max-height:90vh;overflow-y:auto;}
+.modal-overlay.open .modal{transform:scale(1);}
+.modal-lg{max-width:800px;}
+.modal-md{max-width:560px;}
+.modal-header{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.modal-header h3{font-size:16px;font-weight:700;}
+.modal-close{background:var(--dim);border:1px solid var(--border);color:var(--muted);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;}
+.modal-close:hover{color:var(--live);border-color:var(--live);}
+.modal-body{padding:20px;}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;}
+
+/* STREAM LINK ROWS */
+.stream-row{background:var(--dim);border:1px solid var(--border);border-radius:8px;padding:12px;display:grid;grid-template-columns:120px 140px 1fr 130px auto;gap:10px;align-items:center;margin-bottom:8px;}
+.stream-row input,
+.stream-row select{padding:6px 10px;font-size:12px;}
+
+/* MATCH SEARCH */
+.match-search-result{padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;display:flex;align-items:center;gap:12px;}
+.match-search-result:hover{background:var(--dim);}
+.match-search-result:last-child{border-bottom:none;}
+.match-score{font-size:18px;font-weight:800;color:var(--text);min-width:60px;text-align:center;}
+.match-teams{flex:1;}
+.match-league{font-size:11px;color:var(--muted);}
+
+/* ALERT */
+.alert{padding:10px 14px;border-radius:7px;font-size:13px;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.alert-success{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:var(--green);}
+.alert-error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:var(--live);}
+.alert-info{background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.3);color:var(--accent2);}
+
+/* LOG */
+.log-item{padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.03);font-size:12px;display:flex;gap:12px;align-items:flex-start;}
+.log-item:last-child{border-bottom:none;}
+.log-action{color:var(--accent2);font-weight:600;min-width:130px;}
+.log-time{color:var(--muted);min-width:130px;}
+
+/* TABS */
+.tab-bar{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:20px;}
+.tab{padding:8px 16px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .2s;}
+.tab:hover{color:var(--text);}
+.tab.active{color:var(--accent2);border-bottom-color:var(--accent2);}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .sidebar{display:none;}
+  .main{margin-left:0;}
+  .stream-row{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">⚽ Score<span>Zone Admin</span></div>
+  <nav class="sidebar-nav">
+    <div class="nav-group-label">Dashboard</div>
+    <div class="nav-item active" onclick="navigate('dashboard')"><span class="icon">📊</span> Overview</div>
+    <div class="nav-item" onclick="navigate('streams')"><span class="icon">📡</span> Stream Links</div>
+    <div class="nav-group-label">Content</div>
+    <div class="nav-item" onclick="navigate('articles')"><span class="icon">📝</span> Articles</div>
+    <div class="nav-item" onclick="navigate('ai-writer')"><span class="icon">🤖</span> AI Writer</div>
+    <div class="nav-group-label">Config</div>
+    <div class="nav-item" onclick="navigate('settings')"><span class="icon">⚙️</span> Settings</div>
+    <div class="nav-item" onclick="navigate('log')"><span class="icon">📋</span> Activity Log</div>
+  </nav>
+  <div class="sidebar-footer">ScoreZone Admin v1.0</div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <h1 id="pageTitle">Dashboard</h1>
+    <input class="api-url-input" id="apiUrl" placeholder="http://localhost:3001" value="">
+    <input class="api-key-input" id="apiKey" type="password" placeholder="Admin Key" value="scorezone-local-admin">
+    <button class="btn btn-ghost btn-sm" onclick="testConnection()">🔌 Connect</button>
+  </div>
+  <div class="content">
+    <div id="globalAlert" style="display:none"></div>
+
+    <!-- ═══ DASHBOARD ═══ -->
+    <div class="page active" id="page-dashboard">
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card"><div class="stat-label">Streams Today</div><div class="stat-val green" id="statStreamsToday">—</div></div>
+        <div class="stat-card"><div class="stat-label">Total Streams</div><div class="stat-val purple" id="statStreamsTotal">—</div></div>
+        <div class="stat-card"><div class="stat-label">Articles</div><div class="stat-val gold" id="statArticles">—</div></div>
+        <div class="stat-card"><div class="stat-label">Total Views</div><div class="stat-val" id="statViews">—</div></div>
+      </div>
+
+      <div class="section-header">
+        <h2>Today's Matches</h2>
+        <button class="btn btn-primary btn-sm" onclick="navigate('streams')">➕ Add Stream Links</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Match</th><th>League</th><th>Status</th><th>Streams</th><th>Action</th></tr></thead>
+          <tbody id="dashMatchTable"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:30px">Connect to API to load matches</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ═══ STREAM LINKS ═══ -->
+    <div class="page" id="page-streams">
+      <div class="tab-bar">
+        <div class="tab active" onclick="setStreamTab(this,'today')">Today</div>
+        <div class="tab" onclick="setStreamTab(this,'tomorrow')">Tomorrow</div>
+        <div class="tab" onclick="setStreamTab(this,'all')">All Links</div>
+      </div>
+
+      <div class="section-header">
+        <h2>Stream Links</h2>
+        <button class="btn btn-primary" onclick="openAddStreamModal()">➕ Add Stream Links to Match</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Match</th><th>Date</th><th>Quality</th><th>Language</th><th>Server</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="streamTable"><tr><td colspan="7" style="text-align:center;color:var(--muted);padding:30px">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ═══ ARTICLES ═══ -->
+    <div class="page" id="page-articles">
+      <div class="section-header">
+        <h2>Articles</h2>
+        <button class="btn btn-primary" onclick="openArticleModal()">➕ New Article</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Title</th><th>Category</th><th>Status</th><th>Views</th><th>Date</th><th>Actions</th></tr></thead>
+          <tbody id="articleTable"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:30px">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ═══ AI WRITER ═══ -->
+    <div class="page" id="page-ai-writer">
+      <div class="section-header"><h2>🤖 AI Article Writer</h2></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div>
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:16px;">
+            <div style="font-size:14px;font-weight:700;margin-bottom:14px;">Generate Article</div>
+            <div class="form-group" style="margin-bottom:12px;">
+              <label>Topic / Prompt</label>
+              <textarea id="aiPrompt" rows="4" placeholder="e.g. Write a 600-word article about the Champions League semi-finals 2026, previewing both ties, with match predictions and player to watch sections."></textarea>
+            </div>
+            <div class="form-grid" style="margin-bottom:12px;">
+              <div class="form-group">
+                <label>Category</label>
+                <select id="aiCategory">
+                  <option>Football</option><option>Champions League</option><option>Basketball</option>
+                  <option>Tennis</option><option>Formula 1</option><option>Cricket</option>
+                  <option>Boxing</option><option>Esports</option><option>Sports Betting</option>
+                  <option>Sports Psychology</option><option>Sports Tech</option>
+                  <option>Fitness & Training</option><option>Athlete Lifestyle</option>
+                  <option>Scholarships & Education</option><option>Sports Insurance</option>
+                  <option>Sports Law</option><option>Finance & Wealth</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Length</label>
+                <select id="aiLength">
+                  <option value="400">Short (~400 words)</option>
+                  <option value="700" selected>Medium (~700 words)</option>
+                  <option value="1200">Long (~1200 words)</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group" style="margin-bottom:14px;">
+              <label>Anthropic API Key</label>
+              <input type="password" id="anthropicKey" placeholder="sk-ant-...">
+              <div class="form-hint">Used only in your browser — never sent to our server</div>
+            </div>
+            <button class="btn btn-primary" onclick="generateArticle()" id="aiGenerateBtn" style="width:100%">✨ Generate Article</button>
+          </div>
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;">
+            <div style="font-size:13px;font-weight:700;margin-bottom:10px;">Quick Prompts</div>
+            <div id="quickPrompts" style="display:flex;flex-direction:column;gap:6px;"></div>
+          </div>
+        </div>
+        <div>
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+              <div style="font-size:14px;font-weight:700;">Generated Article</div>
+              <button class="btn btn-primary btn-sm" onclick="saveGeneratedArticle()" id="saveAiBtn" style="display:none">💾 Save to DB</button>
+            </div>
+            <div id="aiPreview" style="color:var(--muted);font-size:13px;">Generated article will appear here…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SETTINGS ═══ -->
+    <div class="page" id="page-settings">
+      <div class="section-header"><h2>Site Settings</h2></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;">
+          <div style="font-size:14px;font-weight:700;margin-bottom:16px;">General</div>
+          <div class="form-group" style="margin-bottom:12px;">
+            <label>Site Name</label>
+            <input id="set_site_name" value="ScoreZone">
+          </div>
+          <div class="form-group" style="margin-bottom:12px;">
+            <label>Tagline</label>
+            <input id="set_site_tagline" value="Free Football Live Streaming HD">
+          </div>
+          <div class="form-group" style="margin-bottom:12px;">
+            <label>Telegram Channel URL</label>
+            <input id="set_telegram_url" placeholder="https://t.me/yourChannel">
+          </div>
+          <div class="form-group" style="margin-bottom:16px;">
+            <label>Twitter/X URL</label>
+            <input id="set_twitter_url" placeholder="https://twitter.com/yourHandle">
+          </div>
+          <button class="btn btn-primary" onclick="saveSettings()">💾 Save Settings</button>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;">
+          <div style="font-size:14px;font-weight:700;margin-bottom:16px;">Ad Codes</div>
+          <div class="form-group" style="margin-bottom:12px;">
+            <label>Header Ad Code</label>
+            <textarea id="set_ad_header" rows="3" placeholder="Paste Adsterra/Google Ads script tag here"></textarea>
+          </div>
+          <div class="form-group" style="margin-bottom:12px;">
+            <label>Sidebar Ad Code</label>
+            <textarea id="set_ad_sidebar" rows="3" placeholder="300x250 banner code"></textarea>
+          </div>
+          <div class="form-group" style="margin-bottom:12px;">
+            <label>Article Ad Code</label>
+            <textarea id="set_ad_article" rows="3" placeholder="In-article ad code"></textarea>
+          </div>
+          <div class="form-group" style="margin-bottom:16px;">
+            <label>Popunder Code</label>
+            <textarea id="set_ad_popunder" rows="3" placeholder="Adsterra popunder script"></textarea>
+            <div class="form-hint">⚡ This is your highest-revenue ad format — place Adsterra popunder code here</div>
+          </div>
+          <button class="btn btn-primary" onclick="saveSettings()">💾 Save Ad Settings</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ LOG ═══ -->
+    <div class="page" id="page-log">
+      <div class="section-header"><h2>Activity Log</h2></div>
+      <div class="table-wrap">
+        <div id="logContainer"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: ADD STREAMS ═══ -->
+<div class="modal-overlay" id="streamModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3>➕ Add Stream Links to Match</h3>
+      <button class="modal-close" onclick="closeModal('streamModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- Step 1: Find match -->
+      <div id="streamStep1">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Step 1: Select a match from today's schedule</div>
+        <input style="margin-bottom:12px;" id="matchSearchInput" placeholder="🔍 Search team or league…" oninput="filterMatchSearch()">
+        <div class="table-wrap" style="max-height:280px;overflow-y:auto;" id="matchSearchList">
+          <div style="padding:20px;text-align:center;color:var(--muted);">Loading matches…</div>
+        </div>
+      </div>
+      <!-- Step 2: Add stream links -->
+      <div id="streamStep2" style="display:none;">
+        <div style="background:var(--dim);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:16px;">
+          <div style="font-size:13px;font-weight:700;" id="selectedMatchLabel">Selected Match</div>
+          <div style="font-size:12px;color:var(--muted);" id="selectedMatchMeta"></div>
+        </div>
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px;">Stream Links</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:12px;">Paste the embed iframe URL (src attribute) for each stream. You can get these from sites like embedstreams.top, streameast, vipbox etc.</div>
+        <div id="streamLinksContainer"></div>
+        <button class="btn btn-ghost btn-sm" onclick="addStreamRow()" style="margin-top:8px;">+ Add Another Server</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('streamModal')">Cancel</button>
+      <button class="btn btn-ghost" id="streamBackBtn" onclick="backToStep1()" style="display:none">← Back</button>
+      <button class="btn btn-primary" id="streamSaveBtn" onclick="saveStreamLinks()" style="display:none">💾 Save Stream Links</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: ARTICLE ═══ -->
+<div class="modal-overlay" id="articleModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3 id="articleModalTitle">New Article</h3>
+      <button class="modal-close" onclick="closeModal('articleModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid" style="margin-bottom:12px;">
+        <div class="form-group">
+          <label>Title</label>
+          <input id="art_title" placeholder="Article title">
+        </div>
+        <div class="form-group">
+          <label>Slug (URL)</label>
+          <input id="art_slug" placeholder="article-url-slug">
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <select id="art_category">
+            <option>Football</option><option>Champions League</option><option>Basketball</option>
+            <option>Tennis</option><option>Formula 1</option><option>Cricket</option><option>Golf</option>
+            <option>Boxing</option><option>Esports</option><option>Women's Sports</option>
+            <option>Sports Insurance</option><option>Sports Law</option><option>Finance & Wealth</option>
+            <option>Health & Injury Recovery</option><option>Sports Psychology</option>
+            <option>Sports Tech</option><option>Sports Betting</option><option>Fitness & Training</option>
+            <option>Athlete Lifestyle</option><option>Scholarships & Education</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Image URL</label>
+          <input id="art_image" placeholder="https://...">
+        </div>
+        <div class="form-group span2">
+          <label>Excerpt</label>
+          <input id="art_excerpt" placeholder="Short description (150 chars)">
+        </div>
+        <div class="form-group span2">
+          <label>Body (Markdown or HTML)</label>
+          <textarea id="art_body" rows="12" placeholder="Article body…"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Tags (comma separated)</label>
+          <input id="art_tags" placeholder="Football, Premier League, Arsenal">
+        </div>
+        <div class="form-group">
+          <label>Author</label>
+          <input id="art_author" value="Sports Editorial">
+        </div>
+      </div>
+      <div style="display:flex;gap:16px;">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;text-transform:none;letter-spacing:0;">
+          <input type="checkbox" id="art_featured"> Featured Article
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;text-transform:none;letter-spacing:0;">
+          <input type="checkbox" id="art_published" checked> Published
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('articleModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveArticle()" id="articleSaveBtn">💾 Save Article</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════
+let API   = localStorage.getItem('adminApiUrl') || 'http://localhost:3001';
+let KEY   = localStorage.getItem('adminApiKey') || 'change-this-secret-key-in-production';
+let todayMatches = [];
+let selectedMatch = null;
+let editingArticleId = null;
+let generatedArticle = null;
+let streamTab = 'today';
+
+document.getElementById('apiUrl').value = API;
+document.getElementById('apiKey').value = KEY;
+
+function getApiUrl() { return document.getElementById('apiUrl').value.replace(/\/$/, ''); }
+function getApiKey() { return document.getElementById('apiKey').value; }
+
+async function apiFetch(path, opts = {}) {
+  const url  = getApiUrl() + path;
+  const key  = getApiKey();
+  const res  = await fetch(url, {
+    ...opts,
+    headers: { 'Content-Type': 'application/json', 'X-Admin-Key': key, ...(opts.headers || {}) },
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  });
+  if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
+// ════════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════════
+const titles = { dashboard:'Dashboard Overview', streams:'Stream Links Manager', articles:'Articles', 'ai-writer':'AI Article Writer', settings:'Site Settings', log:'Activity Log' };
+
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelector(`[onclick="navigate('${page}')"]`)?.classList.add('active');
+  document.getElementById('pageTitle').textContent = titles[page] || page;
+
+  if (page === 'dashboard')  loadDashboard();
+  if (page === 'streams')    loadStreams();
+  if (page === 'articles')   loadArticles();
+  if (page === 'settings')   loadSettings();
+  if (page === 'log')        loadLog();
+  if (page === 'ai-writer')  initAiWriter();
+
+  localStorage.setItem('adminApiUrl', getApiUrl());
+  localStorage.setItem('adminApiKey', getApiKey());
+}
+
+// ════════════════════════════════════════════════════
+// ALERTS
+// ════════════════════════════════════════════════════
+function showAlert(msg, type = 'info', autohide = true) {
+  const el = document.getElementById('globalAlert');
+  el.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+  el.style.display = 'block';
+  if (autohide) setTimeout(() => el.style.display = 'none', 4000);
+}
+
+function testConnection() {
+  localStorage.setItem('adminApiUrl', getApiUrl());
+  localStorage.setItem('adminApiKey', getApiKey());
+  apiFetch('/health')
+    .then(() => showAlert('✅ Connected to API server successfully!', 'success'))
+    .catch(e => showAlert('❌ Connection failed: ' + e.message, 'error', false));
+}
+
+// ════════════════════════════════════════════════════
+// DASHBOARD
+// ════════════════════════════════════════════════════
+async function loadDashboard() {
+  try {
+    const [stats, matchData] = await Promise.all([
+      apiFetch('/api/admin/stats'),
+      apiFetch('/api/matches?day=0'),
+    ]);
+
+    document.getElementById('statStreamsToday').textContent  = stats.streams.today;
+    document.getElementById('statStreamsTotal').textContent  = stats.streams.total;
+    document.getElementById('statArticles').textContent      = stats.articles.published;
+    document.getElementById('statViews').textContent         = Number(stats.articles.views).toLocaleString();
+
+    todayMatches = matchData.matches || [];
+    renderDashMatches(todayMatches);
+  } catch (e) {
+    showAlert('Failed to load dashboard: ' + e.message, 'error', false);
+  }
+}
+
+function renderDashMatches(matches) {
+  const tbody = document.getElementById('dashMatchTable');
+  if (!matches.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px">No matches found</td></tr>'; return; }
+
+  tbody.innerHTML = matches.map(m => {
+    const score = (m.homeScore !== null && m.awayScore !== null) ? `${m.homeScore} - ${m.awayScore}` : 'vs';
+    const statusBadge = m.status === 'LIVE' ? '<span class="badge badge-live">🔴 LIVE</span>'
+      : m.status === 'FT' ? '<span class="badge badge-gray">FT</span>'
+      : m.status === 'HT' ? '<span class="badge badge-gold">HT</span>'
+      : '<span class="badge badge-purple">Upcoming</span>';
+    return `<tr>
+      <td><b>${m.homeName}</b> ${score} <b>${m.awayName}</b></td>
+      <td style="color:var(--muted);font-size:12px">${m.leagueName}</td>
+      <td>${statusBadge}</td>
+      <td>${m.streamCount > 0 ? `<span class="badge badge-green">✓ ${m.streamCount} streams</span>` : '<span class="badge badge-gray">No streams</span>'}</td>
+      <td><button class="btn btn-primary btn-sm" onclick="quickAddStream(${JSON.stringify(m).replace(/"/g,'&quot;')})">+ Add Streams</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════
+// STREAM LINKS
+// ════════════════════════════════════════════════════
+function setStreamTab(el, tab) {
+  document.querySelectorAll('#page-streams .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  streamTab = tab;
+  loadStreams();
+}
+
+async function loadStreams() {
+  try {
+    let url = '/api/admin/streams';
+    if (streamTab === 'today')    url += `?date=${todayStr()}`;
+    if (streamTab === 'tomorrow') url += `?date=${tomorrowStr()}`;
+    const rows = await apiFetch(url);
+    renderStreamTable(rows);
+  } catch (e) {
+    document.getElementById('streamTable').innerHTML = `<tr><td colspan="7" style="color:var(--live);padding:20px">${e.message}</td></tr>`;
+  }
+}
+
+function renderStreamTable(rows) {
+  const tbody = document.getElementById('streamTable');
+  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">No stream links found</td></tr>'; return; }
+  tbody.innerHTML = rows.map(r => `<tr>
+    <td><b>${r.home_team}</b> vs <b>${r.away_team}</b></td>
+    <td style="color:var(--muted);font-size:12px">${r.match_date}</td>
+    <td><span class="badge badge-gold">${r.quality}</span></td>
+    <td style="font-size:12px">${r.language}</td>
+    <td style="font-size:12px">${r.server_name}</td>
+    <td>${r.is_active ? '<span class="badge badge-green">Active</span>' : '<span class="badge badge-gray">Off</span>'}</td>
+    <td style="display:flex;gap:6px;">
+      <button class="btn btn-ghost btn-sm" onclick="toggleStream(${r.id},${r.is_active})">${r.is_active ? '⏸' : '▶'}</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteStream(${r.id})">🗑</button>
+    </td>
+  </tr>`).join('');
+}
+
+async function toggleStream(id, current) {
+  await apiFetch(`/api/admin/streams/${id}`, { method: 'PUT', body: { is_active: current ? 0 : 1 } });
+  loadStreams();
+}
+
+async function deleteStream(id) {
+  if (!confirm('Delete this stream link?')) return;
+  await apiFetch(`/api/admin/streams/${id}`, { method: 'DELETE' });
+  showAlert('Stream link deleted', 'success');
+  loadStreams();
+  loadDashboard();
+}
+
+// ── ADD STREAM MODAL ──
+let streamRowCount = 0;
+
+function openAddStreamModal() {
+  selectedMatch = null;
+  document.getElementById('streamStep1').style.display = '';
+  document.getElementById('streamStep2').style.display = 'none';
+  document.getElementById('streamBackBtn').style.display = 'none';
+  document.getElementById('streamSaveBtn').style.display = 'none';
+  loadMatchSearch();
+  openModal('streamModal');
+}
+
+function quickAddStream(match) {
+  openAddStreamModal();
+  setTimeout(() => selectMatch(match), 100);
+}
+
+async function loadMatchSearch() {
+  const list = document.getElementById('matchSearchList');
+  list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">Loading…</div>';
+  try {
+    const data = await apiFetch('/api/matches?day=0');
+    todayMatches = data.matches || [];
+    renderMatchSearch(todayMatches);
+  } catch (e) {
+    list.innerHTML = `<div style="padding:20px;color:var(--live)">${e.message}</div>`;
+  }
+}
+
+function filterMatchSearch() {
+  const q = document.getElementById('matchSearchInput').value.toLowerCase();
+  renderMatchSearch(todayMatches.filter(m =>
+    `${m.homeName} ${m.awayName} ${m.leagueName}`.toLowerCase().includes(q)
+  ));
+}
+
+function renderMatchSearch(matches) {
+  const list = document.getElementById('matchSearchList');
+  list.innerHTML = matches.map(m => {
+    const score = (m.homeScore !== null) ? `${m.homeScore} - ${m.awayScore}` : 'vs';
+    const isLive = m.status === 'LIVE';
+    return `<div class="match-search-result" onclick='selectMatch(${JSON.stringify(m)})'>
+      <div style="font-size:12px">${isLive ? '🔴' : '🕐'}</div>
+      <div class="match-teams">
+        <div style="font-weight:700">${m.homeName} <span style="color:var(--muted)">${score}</span> ${m.awayName}</div>
+        <div class="match-league">${m.leagueFlag} ${m.leagueName} · ${m.kickoff || ''}</div>
+      </div>
+      ${m.streamCount > 0 ? `<span class="badge badge-green">✓ ${m.streamCount}</span>` : ''}
+    </div>`;
+  }).join('') || '<div style="padding:20px;text-align:center;color:var(--muted)">No matches found</div>';
+}
+
+function selectMatch(match) {
+  selectedMatch = match;
+  document.getElementById('selectedMatchLabel').textContent = `${match.homeName} vs ${match.awayName}`;
+  document.getElementById('selectedMatchMeta').textContent  = `${match.leagueFlag} ${match.leagueName} · ID: ${match.id}`;
+  document.getElementById('streamStep1').style.display = 'none';
+  document.getElementById('streamStep2').style.display = '';
+  document.getElementById('streamBackBtn').style.display = '';
+  document.getElementById('streamSaveBtn').style.display = '';
+
+  streamRowCount = 0;
+  const container = document.getElementById('streamLinksContainer');
+  container.innerHTML = '';
+  addStreamRow();
+}
+
+function backToStep1() {
+  document.getElementById('streamStep1').style.display = '';
+  document.getElementById('streamStep2').style.display = 'none';
+  document.getElementById('streamBackBtn').style.display = 'none';
+  document.getElementById('streamSaveBtn').style.display = 'none';
+  selectedMatch = null;
+}
+
+function addStreamRow() {
+  const i = streamRowCount++;
+  const row = document.createElement('div');
+  row.className = 'stream-row';
+  row.id = `srow-${i}`;
+  row.innerHTML = `
+    <select id="sq-${i}">
+      <option>HD 1080p</option><option>HD 720p</option><option>SD 480p</option><option>4K</option>
+    </select>
+    <select id="sl-${i}">
+      <option>English</option><option>Arabic</option><option>French</option><option>Spanish</option>
+      <option>German</option><option>Italian</option><option>No Commentary</option>
+    </select>
+    <input id="su-${i}" placeholder="Embed URL (iframe src) — e.g. https://embedstreams.top/embed/abc123">
+    <input id="sn-${i}" value="Server ${i+1}" placeholder="Server name">
+    <button class="btn btn-danger btn-sm" onclick="document.getElementById('srow-${i}').remove()">✕</button>`;
+  document.getElementById('streamLinksContainer').appendChild(row);
+}
+
+async function saveStreamLinks() {
+  if (!selectedMatch) return;
+
+  const streams = [];
+  document.querySelectorAll('[id^="srow-"]').forEach(row => {
+    const i = row.id.replace('srow-', '');
+    const url = document.getElementById(`su-${i}`)?.value?.trim();
+    if (!url) return;
+    streams.push({
+      quality:     document.getElementById(`sq-${i}`).value,
+      language:    document.getElementById(`sl-${i}`).value,
+      embed_url:   url,
+      server_name: document.getElementById(`sn-${i}`).value || `Server ${parseInt(i)+1}`,
+      sort_order:  parseInt(i),
+    });
+  });
+
+  if (!streams.length) { showAlert('Add at least one stream URL', 'error'); return; }
+
+  const today = new Date().toISOString().slice(0,10);
+  try {
+    await apiFetch('/api/admin/streams', {
+      method: 'POST',
+      body: {
+        match_id:   String(selectedMatch.id),
+        match_date: today,
+        home_team:  selectedMatch.homeName,
+        away_team:  selectedMatch.awayName,
+        league:     selectedMatch.leagueName,
+        streams,
+      },
+    });
+    showAlert(`✅ Saved ${streams.length} stream link(s) for ${selectedMatch.homeName} vs ${selectedMatch.awayName}`, 'success');
+    closeModal('streamModal');
+    loadStreams();
+    loadDashboard();
+  } catch (e) {
+    showAlert('Error: ' + e.message, 'error', false);
+  }
+}
+
+// ════════════════════════════════════════════════════
+// ARTICLES
+// ════════════════════════════════════════════════════
+async function loadArticles() {
+  try {
+    const rows = await apiFetch('/api/admin/articles');
+    const tbody = document.getElementById('articleTable');
+    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">No articles yet</td></tr>'; return; }
+    tbody.innerHTML = rows.map(r => `<tr>
+      <td style="max-width:280px"><b>${r.title}</b></td>
+      <td><span class="badge badge-purple">${r.category}</span></td>
+      <td>${r.is_published ? '<span class="badge badge-green">Live</span>' : '<span class="badge badge-gray">Draft</span>'}
+          ${r.is_featured ? ' <span class="badge badge-gold">⭐</span>' : ''}</td>
+      <td>${Number(r.views).toLocaleString()}</td>
+      <td style="color:var(--muted);font-size:12px">${r.created_at?.slice(0,10)}</td>
+      <td style="display:flex;gap:6px;">
+        <button class="btn btn-ghost btn-sm" onclick="editArticle(${r.id})">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteArticle(${r.id})">🗑</button>
+      </td>
+    </tr>`).join('');
+  } catch (e) {
+    showAlert('Failed to load articles: ' + e.message, 'error', false);
+  }
+}
+
+function openArticleModal(id = null) {
+  editingArticleId = id;
+  document.getElementById('articleModalTitle').textContent = id ? 'Edit Article' : 'New Article';
+  if (!id) {
+    ['art_title','art_slug','art_excerpt','art_body','art_tags','art_image'].forEach(f => document.getElementById(f).value = '');
+    document.getElementById('art_author').value = 'Sports Editorial';
+    document.getElementById('art_category').value = 'Football';
+    document.getElementById('art_featured').checked = false;
+    document.getElementById('art_published').checked = true;
+  }
+  openModal('articleModal');
+}
+
+async function editArticle(id) {
+  try {
+    const { article } = await apiFetch(`/api/articles/${id}`);
+    editingArticleId = id;
+    document.getElementById('articleModalTitle').textContent = 'Edit Article';
+    document.getElementById('art_title').value    = article.title;
+    document.getElementById('art_slug').value     = article.slug;
+    document.getElementById('art_excerpt').value  = article.excerpt;
+    document.getElementById('art_body').value     = article.body;
+    document.getElementById('art_image').value    = article.image_url;
+    document.getElementById('art_author').value   = article.author;
+    document.getElementById('art_tags').value     = (article.tags||[]).join(', ');
+    document.getElementById('art_category').value = article.category;
+    document.getElementById('art_featured').checked  = !!article.is_featured;
+    document.getElementById('art_published').checked = !!article.is_published;
+    openModal('articleModal');
+  } catch (e) { showAlert('Failed to load article: '+e.message,'error'); }
+}
+
+async function saveArticle() {
+  const body = {
+    title:       document.getElementById('art_title').value,
+    slug:        document.getElementById('art_slug').value,
+    excerpt:     document.getElementById('art_excerpt').value,
+    body:        document.getElementById('art_body').value,
+    category:    document.getElementById('art_category').value,
+    tags:        document.getElementById('art_tags').value.split(',').map(t=>t.trim()).filter(Boolean),
+    image_url:   document.getElementById('art_image').value,
+    author:      document.getElementById('art_author').value,
+    is_featured: document.getElementById('art_featured').checked,
+    is_published:document.getElementById('art_published').checked,
+  };
+  try {
+    if (editingArticleId) {
+      await apiFetch(`/api/admin/articles/${editingArticleId}`, { method: 'PUT', body });
+    } else {
+      await apiFetch('/api/admin/articles', { method: 'POST', body });
+    }
+    showAlert('✅ Article saved!', 'success');
+    closeModal('articleModal');
+    loadArticles();
+  } catch (e) { showAlert('Error: '+e.message,'error',false); }
+}
+
+async function deleteArticle(id) {
+  if (!confirm('Delete this article?')) return;
+  await apiFetch(`/api/admin/articles/${id}`, { method: 'DELETE' });
+  showAlert('Article deleted','success');
+  loadArticles();
+}
+
+// ════════════════════════════════════════════════════
+// AI WRITER
+// ════════════════════════════════════════════════════
+const QUICK_PROMPTS = [
+  { label: '⚽ Champions League Preview', prompt: 'Write a 700-word tactical preview of the upcoming Champions League semi-finals. Include both ties, predicted lineups, key battles, and match predictions.' },
+  { label: '📰 Premier League Round-up', prompt: 'Write a 600-word Premier League match day round-up covering the top storylines, standout performers, and title race implications.' },
+  { label: '🎰 Betting Guide for Beginners', prompt: 'Write a comprehensive 800-word guide to sports betting for beginners. Explain decimal and fractional odds, common markets (1X2, BTTS, Over/Under), and bankroll management tips.' },
+  { label: '💪 Fitness: Pre-Season Training', prompt: 'Write a 600-word article about pre-season football training programs used by elite clubs. Cover physical conditioning, tactical work, and mental preparation.' },
+  { label: '🏫 Sports Scholarship Guide', prompt: 'Write a 700-word guide on how athletes can earn sports scholarships to US universities. Cover NCAA divisions, eligibility requirements, and the recruitment process.' },
+  { label: '🧠 Sports Psychology Tips', prompt: 'Write a 600-word article about the mental game in football. Cover visualization, pre-match routines, dealing with pressure, and how top players stay mentally sharp.' },
+];
+
+function initAiWriter() {
+  const container = document.getElementById('quickPrompts');
+  container.innerHTML = QUICK_PROMPTS.map(p => `
+    <button class="btn btn-ghost btn-sm" style="text-align:left;justify-content:flex-start;" onclick="usePrompt('${p.prompt.replace(/'/g,"\\'")}')">${p.label}</button>
+  `).join('');
+}
+
+function usePrompt(prompt) {
+  document.getElementById('aiPrompt').value = prompt;
+}
+
+async function generateArticle() {
+  const anthropicKey = document.getElementById('anthropicKey').value.trim();
+  if (!anthropicKey) { showAlert('Enter your Anthropic API key to use AI Writer', 'error'); return; }
+
+  const prompt   = document.getElementById('aiPrompt').value.trim();
+  const category = document.getElementById('aiCategory').value;
+  const length   = document.getElementById('aiLength').value;
+
+  if (!prompt) { showAlert('Enter a prompt', 'error'); return; }
+
+  const btn = document.getElementById('aiGenerateBtn');
+  btn.textContent = '⏳ Generating…';
+  btn.disabled = true;
+  document.getElementById('aiPreview').innerHTML = '<div style="color:var(--muted)">Calling Claude API…</div>';
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': anthropicKey, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2000,
+        messages: [{
+          role: 'user',
+          content: `You are a professional sports journalist. Write a high-quality SEO-optimized sports article.
+
+Category: ${category}
+Target length: ~${length} words
+Prompt: ${prompt}
+
+Return ONLY valid JSON (no markdown, no preamble):
+{
+  "title": "SEO-optimized title",
+  "slug": "url-friendly-slug",
+  "excerpt": "150-char excerpt",
+  "body": "Full article body with ## headers for sections",
+  "tags": ["tag1","tag2","tag3"],
+  "author": "Sports Editorial"
+}`
+        }]
+      })
+    });
+
+    const data  = await res.json();
+    const text  = data.content?.[0]?.text || '';
+    const clean = text.replace(/```json|```/g,'').trim();
+    generatedArticle = JSON.parse(clean);
+    generatedArticle.category = category;
+
+    document.getElementById('aiPreview').innerHTML = `
+      <div style="margin-bottom:12px;padding:10px;background:var(--dim);border-radius:6px;">
+        <div style="font-size:16px;font-weight:800;margin-bottom:4px">${generatedArticle.title}</div>
+        <div style="font-size:11px;color:var(--muted)">${generatedArticle.slug} · ${category}</div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px">${generatedArticle.excerpt}</div>
+      <div style="font-size:13px;line-height:1.7;white-space:pre-wrap;max-height:400px;overflow-y:auto">${generatedArticle.body}</div>
+      <div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap">${(generatedArticle.tags||[]).map(t=>`<span class="badge badge-purple">${t}</span>`).join('')}</div>`;
+    document.getElementById('saveAiBtn').style.display = '';
+    showAlert('✅ Article generated!', 'success');
+
+  } catch (e) {
+    showAlert('Generation failed: ' + e.message, 'error', false);
+    document.getElementById('aiPreview').innerHTML = `<div style="color:var(--live)">${e.message}</div>`;
+  } finally {
+    btn.textContent = '✨ Generate Article';
+    btn.disabled = false;
+  }
+}
+
+async function saveGeneratedArticle() {
+  if (!generatedArticle) return;
+  try {
+    await apiFetch('/api/admin/articles', { method: 'POST', body: { ...generatedArticle, is_published: true } });
+    showAlert('✅ Article saved to database!', 'success');
+    document.getElementById('saveAiBtn').style.display = 'none';
+  } catch (e) { showAlert('Save failed: '+e.message,'error',false); }
+}
+
+// ════════════════════════════════════════════════════
+// SETTINGS
+// ════════════════════════════════════════════════════
+async function loadSettings() {
+  try {
+    const s = await apiFetch('/api/admin/settings');
+    Object.entries(s).forEach(([k,v]) => {
+      const el = document.getElementById('set_' + k);
+      if (el) el.value = v;
+    });
+  } catch (e) { showAlert('Could not load settings: '+e.message,'error',false); }
+}
+
+async function saveSettings() {
+  const keys = ['site_name','site_tagline','telegram_url','twitter_url','ad_header','ad_sidebar','ad_article','ad_popunder'];
+  const body = {};
+  keys.forEach(k => { const el = document.getElementById('set_'+k); if(el) body[k] = el.value; });
+  try {
+    await apiFetch('/api/admin/settings', { method: 'POST', body });
+    showAlert('✅ Settings saved!', 'success');
+  } catch (e) { showAlert('Error: '+e.message,'error',false); }
+}
+
+// ════════════════════════════════════════════════════
+// ACTIVITY LOG
+// ════════════════════════════════════════════════════
+async function loadLog() {
+  try {
+    const { recentLog } = await apiFetch('/api/admin/stats');
+    const container = document.getElementById('logContainer');
+    container.innerHTML = recentLog.map(l => `<div class="log-item">
+      <div class="log-time">${l.created_at?.slice(0,16)}</div>
+      <div class="log-action">${l.action}</div>
+      <div style="flex:1;font-size:12px;color:var(--muted)">${l.details}</div>
+    </div>`).join('') || '<div style="padding:20px;text-align:center;color:var(--muted)">No activity yet</div>';
+  } catch (e) { showAlert('Failed to load log: '+e.message,'error',false); }
+}
+
+// ════════════════════════════════════════════════════
+// MODAL HELPERS
+// ════════════════════════════════════════════════════
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+});
+
+// ════════════════════════════════════════════════════
+// DATE HELPERS
+// ════════════════════════════════════════════════════
+function todayStr() { return new Date().toISOString().slice(0,10); }
+function tomorrowStr() { const d = new Date(); d.setDate(d.getDate()+1); return d.toISOString().slice(0,10); }
+
+// ════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════
+loadDashboard();
+</script>
+</body>
+</html>
