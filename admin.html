@@ -176,8 +176,8 @@ textarea{resize:vertical;min-height:100px;}
 <div class="main">
   <div class="topbar">
     <h1 id="pageTitle">Dashboard</h1>
-    <input class="api-url-input" id="apiUrl" placeholder="http://localhost:3001" value="">
-    <input class="api-key-input" id="apiKey" type="password" placeholder="Admin Key" value="scorezone-local-admin">
+    <input class="api-url-input" id="apiUrl" placeholder="http://localhost:3001" value="https://scorezone-api-production.up.railway.app">
+    <input class="api-key-input" id="apiKey" type="password" placeholder="Admin Key" value="ScoreZone@2026!">
     <button class="btn btn-ghost btn-sm" onclick="testConnection()">🔌 Connect</button>
   </div>
   <div class="content">
@@ -371,14 +371,27 @@ textarea{resize:vertical;min-height:100px;}
       </div>
       <!-- Step 2: Add stream links -->
       <div id="streamStep2" style="display:none;">
-        <div style="background:var(--dim);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:16px;">
-          <div style="font-size:13px;font-weight:700;" id="selectedMatchLabel">Selected Match</div>
-          <div style="font-size:12px;color:var(--muted);" id="selectedMatchMeta"></div>
+        <div style="background:var(--dim);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:16px;display:flex;align-items:center;gap:12px;">
+          <div style="font-size:22px">&#x26BD;</div>
+          <div>
+            <div style="font-size:14px;font-weight:800;" id="selectedMatchLabel">Selected Match</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px;" id="selectedMatchMeta"></div>
+          </div>
         </div>
-        <div style="font-size:13px;font-weight:700;margin-bottom:10px;">Stream Links</div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:12px;">Paste the embed iframe URL (src attribute) for each stream. You can get these from sites like embedstreams.top, streameast, vipbox etc.</div>
+        <div style="background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(124,58,237,.05));border:1px solid rgba(124,58,237,.35);border-radius:10px;padding:16px;margin-bottom:16px;">
+          <div style="font-size:13px;font-weight:800;margin-bottom:4px;">⚡ Step 1: Paste ONE URL Below → All 4 Servers Fill Automatically</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Paste ANY YouTube or stream URL below — share links, watch links, embed links, all work. It auto-converts and fills all 4 server slots instantly. Viewers always have a backup option.</div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input id="masterUrl" placeholder="Paste ANY link: youtu.be/... or youtube.com/watch?v=... or embed URL"
+              style="flex:1;font-size:13px;padding:12px 14px;background:var(--bg);border:2px solid var(--accent-l);border-radius:8px;color:var(--text);font-family:monospace;"
+              oninput="onMasterUrlInput(this.value)"
+              onpaste="setTimeout(function(){onMasterUrlInput(document.getElementById('masterUrl').value);},80)" onblur="onMasterUrlInput(this.value)">
+            <button class="btn btn-primary" onclick="onMasterUrlInput(document.getElementById('masterUrl').value)" style="white-space:nowrap;padding:12px 22px;font-size:14px;">&#x26A1; Fill All 4</button>
+          </div>
+          <div id="urlHelper" style="display:none;margin-top:8px;font-size:11px;padding:8px 10px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);border-radius:6px;color:#4ade80;"></div>
+        </div>
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">4 Servers (auto-filled — edit individually if needed)</div>
         <div id="streamLinksContainer"></div>
-        <button class="btn btn-ghost btn-sm" onclick="addStreamRow()" style="margin-top:8px;">+ Add Another Server</button>
       </div>
     </div>
     <div class="modal-footer">
@@ -673,19 +686,93 @@ function renderMatchSearch(matches) {
   }).join('') || '<div style="padding:20px;text-align:center;color:var(--muted)">No matches found</div>';
 }
 
+// Server configs — 4 slots, all filled from one URL
+const SERVER_CONFIGS = [
+  { quality: 'HD 1080p', language: 'English',        name: 'Server 1 (HD)' },
+  { quality: 'HD 720p',  language: 'English',        name: 'Server 2 (HD)' },
+  { quality: 'HD 720p',  language: 'Arabic',         name: 'Server 3 (AR)' },
+  { quality: 'SD 480p',  language: 'No Commentary',  name: 'Server 4 (SD)' },
+];
+
 function selectMatch(match) {
   selectedMatch = match;
   document.getElementById('selectedMatchLabel').textContent = `${match.homeName} vs ${match.awayName}`;
-  document.getElementById('selectedMatchMeta').textContent  = `${match.leagueFlag} ${match.leagueName} · ID: ${match.id}`;
+  document.getElementById('selectedMatchMeta').textContent  = `${match.leagueFlag} ${match.leagueName} · ${match.kickoff || ''}`;
   document.getElementById('streamStep1').style.display = 'none';
   document.getElementById('streamStep2').style.display = '';
   document.getElementById('streamBackBtn').style.display = '';
   document.getElementById('streamSaveBtn').style.display = '';
 
-  streamRowCount = 0;
+  // Clear master URL input
+  document.getElementById('masterUrl').value = '';
+  document.getElementById('urlHelper').style.display = 'none';
+
+  // Build all 4 server rows empty
+  buildAllServerRows('');
+}
+
+function buildAllServerRows(url) {
   const container = document.getElementById('streamLinksContainer');
-  container.innerHTML = '';
-  addStreamRow();
+  container.innerHTML = SERVER_CONFIGS.map((cfg, i) => `
+    <div class="stream-row" id="srow-${i}">
+      <select id="sq-${i}">
+        <option ${cfg.quality==='HD 1080p'?'selected':''}>HD 1080p</option>
+        <option ${cfg.quality==='HD 720p'?'selected':''}>HD 720p</option>
+        <option ${cfg.quality==='SD 480p'?'selected':''}>SD 480p</option>
+        <option>4K</option>
+      </select>
+      <select id="sl-${i}">
+        <option ${cfg.language==='English'?'selected':''}>English</option>
+        <option ${cfg.language==='Arabic'?'selected':''}>Arabic</option>
+        <option>French</option><option>Spanish</option><option>German</option>
+        <option ${cfg.language==='No Commentary'?'selected':''}>No Commentary</option>
+      </select>
+      <input id="su-${i}" value="${url}" placeholder="https://www.youtube.com/embed/VIDEO_ID"
+        style="font-family:monospace;font-size:11px;">
+      <input id="sn-${i}" value="${cfg.name}" placeholder="Server name">
+      <button class="btn btn-danger btn-sm" onclick="clearServerRow(${i})">✕</button>
+    </div>`).join('');
+}
+
+function clearServerRow(i) {
+  const el = document.getElementById(`su-${i}`);
+  if (el) el.value = '';
+}
+
+function onMasterUrlInput(raw) {
+  // Auto-convert YouTube share/watch URLs to embed format
+  const converted = convertToEmbed(raw.trim());
+  if (converted !== raw.trim() && converted) {
+    document.getElementById('masterUrl').value = converted;
+    const helper = document.getElementById('urlHelper');
+    helper.style.display = '';
+    helper.innerHTML = `✓ Auto-converted to embed format: <b>${converted}</b>`;
+  }
+  autoFillServers(converted || raw.trim());
+}
+
+function convertToEmbed(url) {
+  if (!url) return url;
+  // youtu.be/ID
+  const short = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+  if (short) return `https://www.youtube.com/embed/${short[1]}`;
+  // youtube.com/watch?v=ID
+  const watch = url.match(/youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/);
+  if (watch) return `https://www.youtube.com/embed/${watch[1]}`;
+  // Already embed format or other — return as-is
+  return url;
+}
+
+function autoFillServers(url) {
+  if (!url) return;
+  const converted = convertToEmbed(url);
+  SERVER_CONFIGS.forEach((_, i) => {
+    const el = document.getElementById(`su-${i}`);
+    if (el) el.value = converted || url;
+  });
+  // Flash green to confirm
+  document.getElementById('streamLinksContainer').style.outline = '2px solid var(--green)';
+  setTimeout(() => document.getElementById('streamLinksContainer').style.outline = 'none', 600);
 }
 
 function backToStep1() {
@@ -696,46 +783,37 @@ function backToStep1() {
   selectedMatch = null;
 }
 
-function addStreamRow() {
-  const i = streamRowCount++;
-  const row = document.createElement('div');
-  row.className = 'stream-row';
-  row.id = `srow-${i}`;
-  row.innerHTML = `
-    <select id="sq-${i}">
-      <option>HD 1080p</option><option>HD 720p</option><option>SD 480p</option><option>4K</option>
-    </select>
-    <select id="sl-${i}">
-      <option>English</option><option>Arabic</option><option>French</option><option>Spanish</option>
-      <option>German</option><option>Italian</option><option>No Commentary</option>
-    </select>
-    <input id="su-${i}" placeholder="Embed URL (iframe src) — e.g. https://embedstreams.top/embed/abc123">
-    <input id="sn-${i}" value="Server ${i+1}" placeholder="Server name">
-    <button class="btn btn-danger btn-sm" onclick="document.getElementById('srow-${i}').remove()">✕</button>`;
-  document.getElementById('streamLinksContainer').appendChild(row);
-}
+function addStreamRow() { /* kept for compatibility */ }
 
 async function saveStreamLinks() {
   if (!selectedMatch) return;
 
+  // Collect all 4 server rows
   const streams = [];
-  document.querySelectorAll('[id^="srow-"]').forEach(row => {
-    const i = row.id.replace('srow-', '');
-    const url = document.getElementById(`su-${i}`)?.value?.trim();
-    if (!url) return;
+  for (let i = 0; i < SERVER_CONFIGS.length; i++) {
+    const urlEl = document.getElementById(`su-${i}`);
+    const url   = urlEl?.value?.trim();
+    if (!url) continue; // skip empty rows
     streams.push({
-      quality:     document.getElementById(`sq-${i}`).value,
-      language:    document.getElementById(`sl-${i}`).value,
+      quality:     document.getElementById(`sq-${i}`)?.value || SERVER_CONFIGS[i].quality,
+      language:    document.getElementById(`sl-${i}`)?.value || SERVER_CONFIGS[i].language,
       embed_url:   url,
-      server_name: document.getElementById(`sn-${i}`).value || `Server ${parseInt(i)+1}`,
-      sort_order:  parseInt(i),
+      server_name: document.getElementById(`sn-${i}`)?.value || SERVER_CONFIGS[i].name,
+      sort_order:  i,
     });
-  });
+  }
 
-  if (!streams.length) { showAlert('Add at least one stream URL', 'error'); return; }
+  if (!streams.length) {
+    showAlert('⚠️ Paste your stream URL in the box above, then click ⚡ Fill All 4', 'error');
+    return;
+  }
 
   const today = new Date().toISOString().slice(0,10);
   try {
+    const btn = document.getElementById('streamSaveBtn');
+    btn.textContent = '⏳ Saving…';
+    btn.disabled = true;
+
     await apiFetch('/api/admin/streams', {
       method: 'POST',
       body: {
@@ -747,12 +825,16 @@ async function saveStreamLinks() {
         streams,
       },
     });
-    showAlert(`✅ Saved ${streams.length} stream link(s) for ${selectedMatch.homeName} vs ${selectedMatch.awayName}`, 'success');
+
+    showAlert(`✅ ${streams.length} streams saved for ${selectedMatch.homeName} vs ${selectedMatch.awayName} — Watch button is now live!`, 'success');
     closeModal('streamModal');
     loadStreams();
     loadDashboard();
   } catch (e) {
-    showAlert('Error: ' + e.message, 'error', false);
+    showAlert('Error saving: ' + e.message, 'error', false);
+  } finally {
+    const btn = document.getElementById('streamSaveBtn');
+    if (btn) { btn.textContent = '💾 Save Stream Links'; btn.disabled = false; }
   }
 }
 
@@ -1006,9 +1088,38 @@ function todayStr() { return new Date().toISOString().slice(0,10); }
 function tomorrowStr() { const d = new Date(); d.setDate(d.getDate()+1); return d.toISOString().slice(0,10); }
 
 // ════════════════════════════════════════════════════
-// INIT
+// INIT — Auto-connect on every page load
 // ════════════════════════════════════════════════════
-loadDashboard();
+
+// Always restore saved connection details
+const savedUrl = localStorage.getItem('sz_api_url') || 'https://scorezone-api-production.up.railway.app';
+const savedKey = localStorage.getItem('sz_api_key') || 'ScoreZone@2026!';
+document.getElementById('apiUrl').value = savedUrl;
+document.getElementById('apiKey').value = savedKey;
+
+// Auto-connect silently on load
+async function autoConnect() {
+  try {
+    await apiFetch('/health');
+    localStorage.setItem('sz_api_url', getApiUrl());
+    localStorage.setItem('sz_api_key', getApiKey());
+    console.log('Auto-connected to API');
+    loadDashboard();
+  } catch(e) {
+    console.warn('Auto-connect failed:', e.message);
+    loadDashboard(); // still try to load
+  }
+}
+
+// Save whenever user connects manually
+const origTestConnection = testConnection;
+testConnection = function() {
+  localStorage.setItem('sz_api_url', getApiUrl());
+  localStorage.setItem('sz_api_key', getApiKey());
+  origTestConnection();
+};
+
+autoConnect();
 </script>
 </body>
 </html>
