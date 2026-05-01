@@ -177,7 +177,7 @@ textarea{resize:vertical;min-height:100px;}
   <div class="topbar">
     <h1 id="pageTitle">Dashboard</h1>
     <input class="api-url-input" id="apiUrl" placeholder="http://localhost:3001" value="https://scorezone-api-production.up.railway.app">
-    <input class="api-key-input" id="apiKey" type="password" placeholder="Admin Key" value="ScoreZone@2026!">
+    <input class="api-key-input" id="apiKey" type="password" placeholder="Admin Key" value="scorezone2026">
     <button class="btn btn-ghost btn-sm" onclick="testConnection()">🔌 Connect</button>
   </div>
   <div class="content">
@@ -1093,7 +1093,7 @@ function tomorrowStr() { const d = new Date(); d.setDate(d.getDate()+1); return 
 
 // Always restore saved connection details
 const savedUrl = localStorage.getItem('sz_api_url') || 'https://scorezone-api-production.up.railway.app';
-const savedKey = localStorage.getItem('sz_api_key') || 'ScoreZone@2026!';
+const savedKey = localStorage.getItem('sz_api_key') || 'scorezone2026';
 document.getElementById('apiUrl').value = savedUrl;
 document.getElementById('apiKey').value = savedKey;
 
