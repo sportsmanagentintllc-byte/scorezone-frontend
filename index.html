@@ -8,6 +8,7 @@
 <meta property="og:title" content="ScoreZone – Free Football Live Streaming HD">
 <meta property="og:description" content="Watch live football matches free in HD quality. No registration required.">
 <meta name="robots" content="index, follow">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%236d28d9'/%3E%3Cstop offset='100%25' style='stop-color:%234c1d95'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='50' cy='50' r='50' fill='url(%23bg)'/%3E%3Ccircle cx='50' cy='50' r='28' fill='white' opacity='0.95'/%3E%3Cpolygon points='50,26 58,32 55,42 45,42 42,32' fill='%231a0b3d'/%3E%3Cpolygon points='72,42 76,52 68,60 60,56 60,44' fill='%231a0b3d'/%3E%3Cpolygon points='66,68 56,72 50,64 54,54 64,54' fill='%231a0b3d'/%3E%3Cpolygon points='34,68 28,58 34,50 44,52 46,64' fill='%231a0b3d'/%3E%3Cpolygon points='28,42 38,38 44,46 40,56 30,54' fill='%231a0b3d'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
 
@@ -444,7 +445,7 @@ footer { background:var(--surface); border-top:1px solid var(--border); padding:
 
 <!-- ══ CONFIG: Change this to your Railway API URL ══ -->
 <script>
-window.KOORA_API = 'https://scorezone-api-production.up.railway.app';
+  window.KOORA_API = 'https://scorezone-api-production.up.railway.app'; // ← CHANGE THIS to your Railway URL
 </script>
 
 <!-- HEADER -->
@@ -1057,21 +1058,39 @@ function renderStreamLinks(streams) {
   if (!streams.length) {
     container.innerHTML = `<div class="no-streams-msg">
       ⏳ No streams available yet for this match.<br>
-      <span style="font-size:11px;margin-top:4px;display:block">Streams are added by our team ~30 mins before kickoff.</span>
+      <span style="font-size:11px;margin-top:4px;display:block">Streams are added 30 mins before kickoff.</span>
     </div>`;
     return;
   }
+
+  // Auto-play the first stream immediately — no click needed
+  playStream(streams[0].embed_url, streams[0].quality);
+
   container.innerHTML = streams.map((s, i) => `
-    <div class="stream-item">
+    <div class="stream-item ${i===0?'active-stream':''}" id="stream-item-${i}"
+      style="${i===0?'background:rgba(109,40,217,.12);border-left:3px solid var(--accent-l);':''}"
+      onclick="switchStream(${i},'${s.embed_url}','${s.quality}')">
       <div class="stream-left">
-        <span style="font-size:18px">📡</span>
+        <span style="font-size:16px">${i===0?'▶️':'📡'}</span>
         <div>
           <div class="stream-quality">${s.quality} – ${s.server_name}</div>
-          <div class="stream-lang">${s.language}</div>
+          <div class="stream-lang">${s.language} ${i===0?'<span style=\"color:var(--green);font-weight:700\"> ● Playing</span>':''}</div>
         </div>
       </div>
-      <button class="btn-stream-watch" onclick="playStream('${s.embed_url}','${s.quality}')">▶ Watch</button>
+      <button class="btn-stream-watch" style="${i===0?'background:var(--green)':''}"
+        onclick="event.stopPropagation();switchStream(${i},'${s.embed_url}','${s.quality}')">
+        ${i===0?'● Live':'▶ Switch'}
+      </button>
     </div>`).join('');
+}
+
+function switchStream(idx, embedUrl, quality) {
+  // Update active styles
+  document.querySelectorAll('.stream-item').forEach((el, i) => {
+    el.style.background = i===idx ? 'rgba(109,40,217,.12)' : '';
+    el.style.borderLeft  = i===idx ? '3px solid var(--accent-l)' : '';
+  });
+  playStream(embedUrl, quality);
 }
 
 function playStream(embedUrl, quality) {
