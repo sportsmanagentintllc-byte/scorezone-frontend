@@ -9,6 +9,7 @@
 <meta property="og:description" content="Watch live football matches free in HD quality. No registration required.">
 <meta name="robots" content="index, follow">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%236d28d9'/%3E%3Cstop offset='100%25' style='stop-color:%234c1d95'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='50' cy='50' r='50' fill='url(%23bg)'/%3E%3Ccircle cx='50' cy='50' r='28' fill='white' opacity='0.95'/%3E%3Cpolygon points='50,26 58,32 55,42 45,42 42,32' fill='%231a0b3d'/%3E%3Cpolygon points='72,42 76,52 68,60 60,56 60,44' fill='%231a0b3d'/%3E%3Cpolygon points='66,68 56,72 50,64 54,54 64,54' fill='%231a0b3d'/%3E%3Cpolygon points='34,68 28,58 34,50 44,52 46,64' fill='%231a0b3d'/%3E%3Cpolygon points='28,42 38,38 44,46 40,56 30,54' fill='%231a0b3d'/%3E%3C/svg%3E">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.12/hls.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
 
@@ -1094,15 +1095,43 @@ function switchStream(idx, embedUrl, quality) {
 }
 
 function playStream(embedUrl, quality) {
-  // In production: replace the player-canvas with an actual iframe
   const canvas = document.querySelector('.player-canvas');
-  canvas.innerHTML = `
-    <iframe src="${embedUrl}"
-      width="100%" height="100%" frameborder="0"
-      allowfullscreen allow="autoplay; encrypted-media"
-      style="position:absolute;inset:0;width:100%;height:100%"
-    ></iframe>`;
-  document.getElementById('mQuality').value = quality;
+  if (!embedUrl) return;
+  const url = embedUrl.trim();
+
+  // Auto-detect stream type
+  const isM3U8  = url.includes('.m3u8') || url.includes('m3u8');
+  const isYT    = url.includes('youtube.com') || url.includes('youtu.be');
+
+  if (isYT) {
+    let vid = '';
+    if (url.includes('watch?v='))     vid = url.split('watch?v=')[1].split('&')[0];
+    else if (url.includes('youtu.be/')) vid = url.split('youtu.be/')[1].split('?')[0];
+    else if (url.includes('/embed/'))   vid = url.split('/embed/')[1].split('?')[0];
+    else vid = url.split('/').pop().split('?')[0];
+    canvas.innerHTML = `<iframe src="https://www.youtube.com/embed/${vid}?autoplay=1" style="position:absolute;inset:0;width:100%;height:100%;border:none" allowfullscreen allow="autoplay;encrypted-media;picture-in-picture"></iframe>`;
+
+  } else if (isM3U8) {
+    canvas.innerHTML = `<video id="hlsVideo" style="width:100%;height:100%;background:#000" controls autoplay playsinline></video>`;
+    const video = document.getElementById('hlsVideo');
+    if (window.Hls && Hls.isSupported()) {
+      const hls = new Hls({ lowLatencyMode: true });
+      hls.loadSource(url);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(()=>{}));
+      hls.on(Hls.Events.ERROR, (e, d) => {
+        if (d.fatal) canvas.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;background:#0a0820;color:#fff;gap:10px"><div style="font-size:36px">⚠️</div><div style="font-weight:700">Stream unavailable</div><div style="font-size:12px;opacity:.5">Try another server</div></div>`;
+      });
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = url; video.play().catch(()=>{});
+    }
+
+  } else {
+    // Regular iframe (embedstreams, etc)
+    canvas.innerHTML = `<iframe src="${url}" style="position:absolute;inset:0;width:100%;height:100%;border:none" allowfullscreen allow="autoplay;encrypted-media;picture-in-picture" scrolling="no"></iframe>`;
+  }
+
+  if (quality) try { document.getElementById('mQuality').value = quality; } catch(e) {}
 }
 
 function closeModal() {
